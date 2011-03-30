@@ -69,6 +69,8 @@ class Disposition_ext {
                     this_date = ui.item.find("td:eq(5)").text();
                     prev_date = prev.find("td:eq(5)").text();
                     next_date = next.find("td:eq(5)").text();
+                    sort_order = $(".mainTable thead tr th:eq(5)").attr("class");
+                    sort_order = sort_order == "headerSortDown" ? "desc" : "asc";
                     
                     this_date_stamp = Date.parse(this_date);
                     prev_date_stamp = Date.parse(prev_date);
@@ -76,11 +78,11 @@ class Disposition_ext {
                     
                     if(prev.length > 0)
                     {
-                        new_date = prev_date_stamp.addMinutes(1);
+                        new_date = sort_order == "desc" ? prev_date_stamp.addMinutes(-10) : prev_date_stamp.addMinutes(10);
                     } 
                     else if(next.length > 0)
                     {
-                        new_date = next_date_stamp.addMinutes(-1);
+                        new_date = sort_order == "desc" ? next_date_stamp.addMinutes(10) : next_date_stamp.addMinutes(-10);
                     }
                     
                     new_date = new_date.toString("MM/dd/yy hh:mm tt").toLowerCase();
