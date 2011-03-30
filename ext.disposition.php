@@ -18,7 +18,7 @@ if (! defined('DISPOSITION_VERSION'))
  * @category    Disposition
  * @author      Brian Litzinger
  * @copyright   Copyright 2010 - Brian Litzinger
- * @link        http://boldminded.com
+ * @link        http://boldminded.com/add-ons/disposition
  */
  
 class Disposition_ext {
@@ -41,7 +41,7 @@ class Disposition_ext {
         if(REQ == 'CP' AND $this->EE->router->class == 'content_edit')
         {
             $this->EE->load->library('javascript');
-            // $this->debug($this->EE->router->class);
+            $action_url = $this->EE->config->item('site_url') .'?ACT='. $this->EE->cp->fetch_action_id('Disposition', 'update_entry_date');
             
             $js = '
             var fixHelper = function(e, ui) {
@@ -89,16 +89,16 @@ class Disposition_ext {
                     
                     $(this).find("tr:odd").removeClass("odd even").addClass("odd");
                     $(this).find("tr:even").removeClass("odd even").addClass("even");
+                    
+                    var data = "entry_id="+ id +"&time="+ new_date;
+                    $.ajax({
+                        type: "POST",
+                        url: "'. $action_url .'",
+                        data: data
+                    });
                 }
             });
             ';
-            
-            // var data = $(this).sortable("serialize", {key:'order[]'});
-            // $.ajax({
-            //     type: "POST",
-            //     url: "",
-            //     data: data
-            // });
             
             $scripts = '
                 <script type="text/javascript" src="/ee/dev5/third_party/disposition/date.js"></script>
