@@ -51,59 +51,76 @@ class Disposition_ext {
                 return ui;
             };
             
-            $(".mainTable tbody tr").each(function(){
-                $(this).find("td:eq(0)").prepend(\'<span class="disposition_handle" style="width: 10px; height: 10px; background-color: red; display: block;"></span>\');
-            });
-            
-            $(".mainTable tbody").sortable({
-                axis: "y",
-                placeholder: "ui-state-highlight",
-                distance: 5,
-                forcePlaceholderSize: true,
-                items: "tr",
-                helper: fixHelper,
-                update: function(event, ui){
-                    prev = ui.item.prev();
-                    next = ui.item.next();
-                    id = ui.item.find("td:eq(0)").text();
-                    this_date = ui.item.find("td:eq(5)").text();
-                    prev_date = prev.find("td:eq(5)").text();
-                    next_date = next.find("td:eq(5)").text();
-                    sort_order = $(".mainTable thead tr th:eq(5)").attr("class");
-                    sort_order = sort_order == "headerSortDown" ? "desc" : "asc";
+            $(".dataTables_wrapper").ajaxSuccess(function(e, xhr, settings)
+            {
+                url = settings.url;
+                var regex = /(M=edit_ajax_filter)/g; 
+                
+                console.log($(".mainTable tbody tr").length);
+                
+                if(regex.test(url) && $(".mainTable tbody tr").length > 1) 
+                {
+                    $(".mainTable tbody tr").each(function(){
+                        $(this).find("td:eq(0)").wrapInner(\'<div></div>\');
+                        $(this).find("td:eq(0)").find(\'div\').prepend(\'<span class="disposition_handle"></span>\');
+                    });
                     
-                    this_date_stamp = Date.parse(this_date);
-                    prev_date_stamp = Date.parse(prev_date);
-                    next_date_stamp = Date.parse(next_date);
+                    $(".mainTable tbody").sortable({
+                        axis: "y",
+                        placeholder: "ui-state-highlight",
+                        distance: 5,
+                        forcePlaceholderSize: true,
+                        items: "tr",
+                        helper: fixHelper,
+                        handle: ".disposition_handle",
+                        update: function(event, ui){
                     
-                    if(prev.length > 0)
-                    {
-                        new_date = sort_order == "desc" ? prev_date_stamp.addMinutes(-10) : prev_date_stamp.addMinutes(10);
-                    } 
-                    else if(next.length > 0)
-                    {
-                        new_date = sort_order == "desc" ? next_date_stamp.addMinutes(10) : next_date_stamp.addMinutes(-10);
-                    }
+                            ids = new Array();
+                            $(".mainTable tbody tr").each(function(){
+                                ids.push($(this).find("td:eq(0)").text());
+                            });
                     
-                    new_date = new_date.toString("MM/dd/yy hh:mm tt").toLowerCase();
+                            dragged = ui.item.find("td:eq(0)").text();
                     
-                    ui.item.find("td:eq(5)").text(new_date);
+                            sort_order = $(".mainTable thead tr th:eq(5)").attr("class");
+                            sort_order = sort_order == "headerSortDown" ? "desc" : "asc";
                     
-                    $(this).find("tr:odd").removeClass("odd even").addClass("odd");
-                    $(this).find("tr:even").removeClass("odd even").addClass("even");
+                            $(this).find("tr:odd").removeClass("odd even").addClass("odd");
+                            $(this).find("tr:even").removeClass("odd even").addClass("even");
                     
-                    var data = "entry_id="+ id +"&time="+ new_date;
-                    $.ajax({
-                        type: "POST",
-                        url: "'. $action_url .'",
-                        data: data
+                            $.ajax({
+                                type: "POST",
+                                url: "'. $action_url .'",
+                                data: "sort_order="+ sort_order +"&dragged="+ dragged +"&ids="+ ids.toString()
+                            });
+                        }
                     });
                 }
             });
             ';
             
+            $css = '
+                <style type="text/css">
+                    .disposition_handle { 
+                        width: 14px; 
+                        height: 20px;
+                        background-color: red;
+                        position: absolute;
+                        top: -4px;
+                        left: -20px;
+                        cursor: move;
+                    }
+                    
+                    .mainTable tbody tr td:first-child div {
+                        position: relative;
+                    }
+                </style>
+            ';
+            
+            // Output JS, and remove extra white space and line breaks
+            $out = str_replace('</head>', $css . '</head>', $out);
+            
             $scripts = '
-                <script type="text/javascript" src="/ee/dev5/third_party/disposition/date.js"></script>
                 <script type="text/javascript">$(function(){'. preg_replace("/\s+/", " ", $js) .'});</script>
             ';
             
@@ -152,7 +169,8 @@ class Disposition_ext {
         );
         
         $extensions = array(
-            array('hook'=>'sessions_end', 'method'=>'sessions_end')
+            array('hook'=>'sessions_end', 'method'=>'sessions_end'),
+            array('hook'=>'show_full_control_panel_end', 'method'=>'show_full_control_panel_end')
         );
         
         foreach($extensions as $extension)

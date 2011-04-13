@@ -20,16 +20,63 @@ class disposition {
     
     function update_entry_date()
     {
-        $id = $this->EE->input->post('entry_id');
-        $time = $this->EE->input->post('time');
+        $ids = explode(',', $this->EE->input->post('ids', TRUE));
+        $dragged = $this->EE->input->post('dragged', TRUE);
+        $sort_order = $this->EE->input->post('sort_order', TRUE);
         
-        $time = date('Y-m-d H:i:s', strtotime($time));
-        $time_stamp = $this->EE->localize->convert_human_date_to_gmt($time);
+        if(count($ids) == 0)
+        {
+            echo 'empty';
+            exit;
+        }
         
-        $this->EE->db->where('entry_id', $id)
-                     ->update('channel_titles', array('entry_date' => $time_stamp));
+        $query = $this->EE->db->where_in('entry_id', $ids)
+                              ->get('channel_titles');
+        
+        $entries = array();                      
+        foreach($query->result_array() as $entry)
+        {
+            $entries[$entry['entry_id']] = $entry;
+        }
+        
+        // Now reverse our IDs so we're adding minutes from the bottom up if viewing entries by ascending order
+        $sorted_ids = $sort_order == 'asc' ? array_reverse($ids) : $ids;
+        
+        // Get the entry_date for the last entry in the list
+        $last_entry = array_pop($ids);
+        $last_date = $entries[$last_entry]['entry_date'];
+        $i = 0;
+        
+        // Sort our entries by our newly reversed ID string
+        $entries = $this->_sort_entries($entries, $sorted_ids);
+        
+        foreach($entries as $entry_id => $entry)
+        {
+            $i++;
+            $new_date = strtotime("+". $i ." minute", $last_date);
+            
+            // echo $entry_id .' => '. date('m/d/Y h:i:s', $new_date) . "\n";
+            
+            $this->EE->db->where('entry_id', $entry_id)
+                         ->update('channel_titles', array('entry_date' => $new_date));
+        }
         
         exit;
+    }
+    
+    private function _sort_entries($array, $order_array)
+    {
+        $ordered = array();
+        foreach($order_array as $key) 
+        {
+            if(array_key_exists($key, $array)) 
+            {
+                $ordered[$key] = $array[$key];
+                unset($array[$key]);
+            }
+        }
+        
+        return $ordered + $array;
     }
     
     private function debug($str, $die = false)
