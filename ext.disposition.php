@@ -28,107 +28,17 @@ class Disposition_ext {
     var $version = DISPOSITION_VERSION;
     var $description = DISPOSITION_DESCRIPTION;
     var $docs_url = DISPOSITION_DOCS_URL;
-    var $settings_exist = 'n';
+    var $settings_exist = 'y';
     
     function Disposition_ext($settings='')
     {
         $this->EE =& get_instance();
-        $this->settings = $settings;
+        $this->settings = $this->_get_settings();
     }
     
-    function show_full_control_panel_end($out)
+    function settings_form($vars)
     {
-        if(REQ == 'CP' AND $this->EE->router->class == 'content_edit')
-        {
-            $this->EE->load->library('javascript');
-            $action_url = $this->EE->config->item('site_url') .'?ACT='. $this->EE->cp->fetch_action_id('Disposition', 'update_entry_date');
-            
-            $js = '
-            var fixHelper = function(e, ui) {
-                ui.children().each(function() {
-                    $(this).width($(this).width());
-                });
-                return ui;
-            };
-            
-            $(".dataTables_wrapper").ajaxSuccess(function(e, xhr, settings)
-            {
-                url = settings.url;
-                var regex = /(M=edit_ajax_filter)/g; 
-                
-                console.log($(".mainTable tbody tr").length);
-                
-                if(regex.test(url) && $(".mainTable tbody tr").length > 1) 
-                {
-                    $(".mainTable tbody tr").each(function(){
-                        $(this).find("td:eq(0)").wrapInner(\'<div></div>\');
-                        $(this).find("td:eq(0)").find(\'div\').prepend(\'<span class="disposition_handle"></span>\');
-                    });
-                    
-                    $(".mainTable tbody").sortable({
-                        axis: "y",
-                        placeholder: "ui-state-highlight",
-                        distance: 5,
-                        forcePlaceholderSize: true,
-                        items: "tr",
-                        helper: fixHelper,
-                        handle: ".disposition_handle",
-                        update: function(event, ui){
-                    
-                            ids = new Array();
-                            $(".mainTable tbody tr").each(function(){
-                                ids.push($(this).find("td:eq(0)").text());
-                            });
-                    
-                            dragged = ui.item.find("td:eq(0)").text();
-                    
-                            sort_order = $(".mainTable thead tr th:eq(5)").attr("class");
-                            sort_order = sort_order == "headerSortDown" ? "desc" : "asc";
-                    
-                            $(this).find("tr:odd").removeClass("odd even").addClass("odd");
-                            $(this).find("tr:even").removeClass("odd even").addClass("even");
-                    
-                            $.ajax({
-                                type: "POST",
-                                url: "'. $action_url .'",
-                                data: "sort_order="+ sort_order +"&dragged="+ dragged +"&ids="+ ids.toString()
-                            });
-                        }
-                    });
-                }
-            });
-            ';
-            
-            $css = '
-                <style type="text/css">
-                    .disposition_handle { 
-                        width: 14px; 
-                        height: 20px;
-                        background-color: red;
-                        position: absolute;
-                        top: -4px;
-                        left: -20px;
-                        cursor: move;
-                    }
-                    
-                    .mainTable tbody tr td:first-child div {
-                        position: relative;
-                    }
-                </style>
-            ';
-            
-            // Output JS, and remove extra white space and line breaks
-            $out = str_replace('</head>', $css . '</head>', $out);
-            
-            $scripts = '
-                <script type="text/javascript">$(function(){'. preg_replace("/\s+/", " ", $js) .'});</script>
-            ';
-            
-            // Output JS, and remove extra white space and line breaks
-            $out = str_replace('</body>', '</body>'. $scripts, $out);
-        }
-        
-        return $out;
+        $this->EE->lang->loadfile('disposition');
     }
     
     /**
@@ -136,17 +46,16 @@ class Disposition_ext {
      */
     function settings()
     {
-        // $settings = array();
-        // 
-        // $settings['enable_member_vars'] = array('s', array('no' => 'No', 'yes' => 'Yes'), $this->default_settings['enable_member_vars']);
-        // $settings['member_prefix'] = $this->default_settings['member_prefix'];
-        // $settings['member_suffix'] = $this->default_settings['member_suffix'];
-        // 
-        // $settings['enable_postget_vars'] = array('s', array('no' => 'No', 'yes' => 'Yes'), $this->default_settings['enable_postget_vars']);
-        // $settings['post_prefix'] = $this->default_settings['post_prefix'];
-        // $settings['get_prefix'] = $this->default_settings['get_prefix'];
-        // $settings['get_default'] = array('t', '', '');
-        // $settings['post_default'] = array('t', '', '');
+
+        $query = $this->EE->db->get('channels');
+        $channels = array();
+        
+        foreach($query->result_array() as $channel)
+        {
+            $channels[$channel['channel_id']] = $channel['channel_title'];
+        }
+
+        $settings['enabled_channels'] = array('ms', $channels, $this->settings['enabled_channels']);
         
         return $settings;
     }
@@ -169,8 +78,7 @@ class Disposition_ext {
         );
         
         $extensions = array(
-            array('hook'=>'sessions_end', 'method'=>'sessions_end'),
-            array('hook'=>'show_full_control_panel_end', 'method'=>'show_full_control_panel_end')
+            array('hook'=>'bogus_hook', 'method'=>'bogus_hook'),
         );
         
         foreach($extensions as $extension)
@@ -197,6 +105,46 @@ class Disposition_ext {
     function disable_extension() 
     {
         $this->EE->db->delete('extensions', array('class' => __CLASS__)); 
+    }
+    
+    /**
+    * Get the site specific settings from the extensions table
+    * Originally written by Leevi Graham? Modified for EE2.0
+    *
+    * @param $force_refresh     bool    Get the settings from the DB even if they are in the session
+    * @return array                     If settings are found otherwise false. Site settings are returned by default.
+    */
+    private function _get_settings($force_refresh = FALSE)
+    {
+        // assume there are no settings
+        $settings = FALSE;
+        $this->EE->load->helper('string');
+
+        // Get the settings for the extension
+        if(isset($this->cache['settings']) === FALSE || $force_refresh === TRUE)
+        {
+            // check the db for extension settings
+            $query = $this->EE->db->query("SELECT settings FROM exp_extensions WHERE enabled = 'y' AND class = '" . __CLASS__ . "' LIMIT 1");
+
+            // if there is a row and the row has settings
+            if ($query->num_rows() > 0 && $query->row('settings') != '')
+            {
+                // save them to the cache
+                $this->cache['settings'] = strip_slashes(unserialize($query->row('settings')));
+            }
+        }
+
+        // check to see if the session has been set
+        // if it has return the session
+        // if not return false
+        if(empty($this->cache['settings']) !== TRUE)
+        {
+            $settings = $this->cache['settings'];
+        }
+        
+        
+
+        return $settings;
     }
     
     private function debug($str, $die = false)
