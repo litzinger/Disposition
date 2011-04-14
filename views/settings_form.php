@@ -1,14 +1,13 @@
 <?php echo form_open('C=addons_extensions'.AMP.'M=save_extension_settings', 'id="disposition_settings"', $hidden)?>
     
 <?php
-// Enable Edit menu tweak in Accessory?
 $this->table->set_template($cp_table_template);
 $this->table->set_heading(
-    array('data' => lang('enable_edit_menu_tweaks'), 'style' => 'width: 80%;', 'colspan' => '2')
+    array('data' => lang('enabled_channels_heading'), 'style' => 'width: 100%;', 'colspan' => '2')
 );
 $this->table->add_row(
-    array('data' => '<p>'. lang('enable_edit_menu_tweaks_detail') .'</p>', 'style' => 'width: 80%'),
-    array('data' => form_dropdown('enable_edit_menu_tweaks', array('n' => 'No', 'y' => 'Yes'), $enable_edit_menu_tweaks, 'id=enable_edit_menu_tweaks'), 'style' => 'width: 20%')
+    array('data' => '<p>'. lang('enabled_channels_label') .'</p>', 'style' => 'width: 40%'),
+    array('data' => form_multiselect('enabled_channels[]', $channels, $enabled_channels, 'size="6"'), 'style' => 'width: 60%')
 );
 
 echo $this->table->generate();

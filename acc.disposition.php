@@ -54,10 +54,15 @@ class Disposition_acc {
                                      ->where('class', 'Disposition_ext')
                                      ->get('extensions')
                                      ->row('settings');
-
+                                 
+            $site_id = $this->EE->config->item('site_id');
             $settings = unserialize($settings);
-            $settings = implode(',', $settings['enabled_channels']);
+            $settings = isset($settings[$site_id]['enabled_channels']) ? implode(',', $settings[$site_id]['enabled_channels']) : false;
         
+            // If we have no settings, stop here
+            if(!$settings)
+                return;
+                
             $script .= '
             var fixHelper = function(e, ui) {
                 ui.children().each(function() {
@@ -123,7 +128,7 @@ class Disposition_acc {
                 .disposition_handle { 
                     width: 14px; 
                     height: 20px;
-                    background: url('. $this->EE->config->slash_item('theme_folder_url') .'third_party/boldminded_themes/images/icon_handle.gif) 50% 50% no-repeat;
+                    background: url(data:image/gif;base64,R0lGODlhEwATAIABAKKiosrklCH5BAEAAAEALAAAAAATABMAQAIXjI+pCO2wopy02steq3rjD4biSJbmKRYAOw%3D%3D) 50% 50% no-repeat;
                     position: absolute;
                     top: -4px;
                     left: -5px;

@@ -33,31 +33,58 @@ class Disposition_ext {
     function Disposition_ext($settings='')
     {
         $this->EE =& get_instance();
-        $this->settings = $this->_get_settings();
-    }
-    
-    function settings_form($vars)
-    {
-        $this->EE->lang->loadfile('disposition');
+        
+        $settings = $this->_get_settings();
+        
+        // All settings
+        $this->global_settings = $settings;
+        
+        // Site specific settings
+        $site_id = $this->EE->config->item('site_id');
+        $this->settings = isset($settings[$site_id]) ? $settings[$site_id] : array();
     }
     
     /**
-     * Set default setting for variable prefix
+     * Custom settings form
      */
-    function settings()
+    function settings_form($vars)
     {
-
-        $query = $this->EE->db->get('channels');
         $channels = array();
+        $vars = $this->settings;
         
+        $this->EE->lang->loadfile('disposition');
+        
+        $query = $this->EE->db->get('channels');
+         
         foreach($query->result_array() as $channel)
         {
             $channels[$channel['channel_id']] = $channel['channel_title'];
         }
 
-        $settings['enabled_channels'] = array('ms', $channels, $this->settings['enabled_channels']);
+        $vars['hidden'] = array('file' => 'disposition');
+        $vars['channels'] = $channels;
+        $vars['enabled_channels'] = isset($this->settings['enabled_channels']) ? $this->settings['enabled_channels'] : false;
         
-        return $settings;
+        // Load it up and return it to addons_extensions.php for rendering
+        return $this->EE->load->view('settings_form', $vars, TRUE);
+    }
+    
+    /**
+     * Custom save action
+     */
+    function save_settings()
+    {
+        $insert['enabled_channels'] = $this->EE->input->post('enabled_channels');
+
+        // Save our settings to the current site ID for MSM.
+        $site_id = $this->EE->config->item('site_id');
+        $settings = $this->global_settings;
+        $settings[$site_id] = $insert;
+
+        $this->EE->db->where('class', strtolower(__CLASS__));
+        $this->EE->db->update('extensions', array('settings' => serialize($settings)));
+        
+        $this->EE->session->set_flashdata('message_success', $this->EE->lang->line('preferences_updated'));
     }
     
     /**
@@ -86,6 +113,9 @@ class Disposition_ext {
             $ext = array_merge($ext_template, $extension);
             $this->EE->db->insert('exp_extensions', $ext);
         }   
+        
+        $this->EE->db->where('class', 'Disposition_acc')
+                     ->update('accessories', array('controllers' => 'content_edit'));
     }
 
     /**
