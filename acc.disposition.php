@@ -10,6 +10,7 @@ if (! defined('DISPOSITION_VERSION'))
     define('DISPOSITION_DOCS_URL', $config['docs_url']);
 }
 
+
 /**
  * ExpressionEngine Disposition Accessory Class
  *
