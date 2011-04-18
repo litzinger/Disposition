@@ -58,8 +58,8 @@ class Disposition_acc {
                                  
             $site_id = $this->EE->config->item('site_id');
             $settings = unserialize($settings);
-            $settings = isset($settings[$site_id]['enabled_channels']) ? implode(',', $settings[$site_id]['enabled_channels']) : false;
-        
+            $settings = isset($settings[$site_id]['enabled_channels']) ? implode('","', $settings[$site_id]['enabled_channels']) : false;
+
             // If we have no settings, stop here
             if(!$settings)
                 return;
@@ -78,9 +78,9 @@ class Disposition_acc {
                 var regex = /(M=edit_ajax_filter)/g; 
                 
                 channel_id = $("#f_channel_id").val();
-                settings = new Array('. $settings .');
+                settings = new Array("'. $settings .'");
                 
-                if(regex.test(url) && $(".mainTable tbody tr").length > 1 && $.inArray(parseInt(channel_id), settings) > -1) 
+                if(regex.test(url) && $(".mainTable tbody tr").length > 1 && $.inArray(channel_id, settings) > -1) 
                 {
                     $(".mainTable tbody tr").each(function(){
                         $(this).find("td:eq(0)").wrapInner(\'<div></div>\');
@@ -145,5 +145,14 @@ class Disposition_acc {
             // Output CSS, and remove extra white space and line breaks
             $this->EE->cp->add_to_head('<!-- BEGIN Disposition assets --><style type="text/css">'. preg_replace("/\s+/", " ", $css) .'</style><!-- END Disposition assets -->');
         }
+    }
+    
+    private function debug($str, $die = false)
+    {
+        echo '<pre>';
+        var_dump($str);
+        echo '</pre>';
+        
+        if($die) die('debug terminated');
     }
 }
