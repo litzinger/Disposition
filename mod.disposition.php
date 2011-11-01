@@ -40,7 +40,8 @@ class disposition {
         }
         
         // Now reverse our IDs so we're adding minutes from the bottom up if viewing entries by ascending order
-        $sorted_ids = $sort_order == 'asc' ? array_reverse($ids) : $ids;
+        // $sorted_ids = $sort_order == 'asc' ? array_reverse($ids) : $ids;
+        $sorted_ids = $sort_order == 'desc' ? array_reverse($ids) : $ids; 
         
         // Get the entry_date for the last entry in the list
         $last_entry = array_pop($ids);
