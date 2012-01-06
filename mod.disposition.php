@@ -16,6 +16,12 @@ class disposition {
     function __construct()
     {
         $this->EE =& get_instance();
+
+        $userdata =& $this->EE->session->userdata;
+        if ($userdata['can_access_cp'] != 'y' && $userdata['can_access_content'] != 'y' && $userdata['can_access_edit'] != 'y')
+        {
+            show_error(lang('unauthorized_access'));
+        }
     }
     
     function update_entry_date()
@@ -24,13 +30,14 @@ class disposition {
         $dragged = $this->EE->input->post('dragged', TRUE);
         $sort_order = $this->EE->input->post('sort_order', TRUE);
         
-        if(count($ids) == 0)
+        if(count($ids) == 0 || $ids[0]=='')
         {
             echo 'empty';
             exit;
         }
         
         $query = $this->EE->db->where_in('entry_id', $ids)
+                              ->order_by('entry_date','asc')
                               ->get('channel_titles');
         
         $entries = array();                      
@@ -43,9 +50,10 @@ class disposition {
         // $sorted_ids = $sort_order == 'asc' ? array_reverse($ids) : $ids;
         $sorted_ids = $sort_order == 'desc' ? array_reverse($ids) : $ids; 
         
-        // Get the entry_date for the last entry in the list
-        $last_entry = array_pop($ids);
-        $last_date = $entries[$last_entry]['entry_date'];
+        
+        // Get the entry_date for the oldest entry in the list
+        $last_entry = current($entries);
+        $last_date = $last_entry['entry_date'];
         $i = 0;
         
         // Sort our entries by our newly reversed ID string
@@ -53,13 +61,13 @@ class disposition {
         
         foreach($entries as $entry_id => $entry)
         {
-            $i++;
             $new_date = strtotime("+". $i ." minute", $last_date);
             
             // echo $entry_id .' => '. date('m/d/Y h:i:s', $new_date) . "\n";
             
             $this->EE->db->where('entry_id', $entry_id)
                          ->update('channel_titles', array('entry_date' => $new_date));
+            $i++;
         }
         
         exit;
