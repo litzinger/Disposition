@@ -16,6 +16,12 @@ class disposition {
     function __construct()
     {
         $this->EE =& get_instance();
+
+        $userdata =& $this->EE->session->userdata;
+        if ($userdata['can_access_cp'] != 'y' && $userdata['can_access_content'] != 'y' && $userdata['can_access_edit'] != 'y')
+        {
+            show_error(lang('unauthorized_access'));
+        }
     }
     
     function update_entry_date()
