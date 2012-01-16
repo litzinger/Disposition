@@ -104,7 +104,7 @@ class Disposition_acc {
                 
                             dragged = ui.item.find("td:eq(0)").text();
                 
-                            sort_order = $(".mainTable thead tr th:eq(5)").attr("class");
+                            sort_order = $(".mainTable th:eq(4)").attr("class");
                             sort_order = sort_order == "headerSortDown" ? "desc" : "asc";
                 
                             $(this).find("tr:odd").removeClass("odd even").addClass("odd");
