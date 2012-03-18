@@ -63,26 +63,35 @@ class Disposition_acc {
             // If we have no settings, stop here
             if(!$settings)
                 return;
-                
+
             $script .= '
+			
             var fixHelper = function(e, ui) {
                 ui.children().each(function() {
                     $(this).width($(this).width());
                 });
                 return ui;
             };
-        
-            $(".dataTables_wrapper").ajaxSuccess(function(e, xhr, settings)
+
+			//Using "mainTable" because EE2.4 removed the old hook
+            $(".mainTable").ajaxSuccess(function(e, xhr, settings)
             {
-                url = settings.url;
-                var regex = /(M=edit_ajax_filter)/g; 
+                
+				url = settings.url;
+                
+                //Check if we have added handles to this thing because the 
+                //AJAX url check does not work in EE2.4
+                var handlecount = $(".disposition_handle").length; 
                 
                 channel_id = $("#f_channel_id").val();
                 settings = new Array("'. $settings .'");
-                
-                if(regex.test(url) && $(".mainTable tbody tr").length > 1 && $.inArray(channel_id, settings) > -1) 
+			    			    
+                if($(".mainTable tbody tr").length > 1 && handlecount == 0 && $.inArray(channel_id, settings) > -1) 
                 {
-                    $(".mainTable tbody tr").each(function(){
+
+                    
+$(".mainTable tbody tr").each(function(){
+
                         $(this).find("td:eq(0)").wrapInner(\'<div></div>\');
                         $(this).find("td:eq(0)").find(\'div\').prepend(\'<span class="disposition_handle"></span>\');
                     });
@@ -109,7 +118,7 @@ class Disposition_acc {
                 
                             $(this).find("tr:odd").removeClass("odd even").addClass("odd");
                             $(this).find("tr:even").removeClass("odd even").addClass("even");
-                
+
                             $.ajax({
                                 type: "POST",
                                 url: "'. $action_url .'",
@@ -119,10 +128,13 @@ class Disposition_acc {
                     });
                 }
             });
+
+			//init (this may not be necessary... but it does not fire automatically in 2.4)
+			$.ajax({type: "POST",url: ""});
             ';
-        
-            // Output JS, and remove extra white space and line breaks
-            $this->EE->javascript->output(preg_replace("/\s+/", " ", $script));
+  
+            // Leave linebreaks etc because EE2.4 seems to need them..!            
+            $this->EE->javascript->output($script);                
             $this->EE->javascript->compile();
         
             $css = '
