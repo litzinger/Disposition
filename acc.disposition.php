@@ -124,6 +124,9 @@ $(".mainTable tbody tr").each(function(){
                                 url: "'. $action_url .'",
                                 data: "sort_order="+ sort_order +"&dragged="+ dragged +"&ids="+ ids.toString()
                             });
+                        },
+                        start: function (event, ui){
+                            ui.placeholder.html(\'<td colspan="9">&nbsp;</td>\');
                         }
                     });
                 }
@@ -145,9 +148,20 @@ $(".mainTable tbody tr").each(function(){
                     position: absolute;
                     top: -4px;
                     left: -5px;
-                    cursor: move;
+                    cursor: -moz-grab;
+                    cursor: -webkit-grab;
+                    cursor: grab;
                 }
-            
+                tr.ui-sortable-helper {
+                    cursor:-moz-grabbing;
+                    cursor:-webkit-grabbing;
+                    cursor: grabbing;
+                    box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.3);
+            	}
+            	tr.ui-state-highlight > td {
+                    line-height: 13px;
+                    background-color: #ABB7C3;
+            	}
                 .mainTable tbody tr td:first-child div {
                     position: relative;
                     padding-left: 12px;
